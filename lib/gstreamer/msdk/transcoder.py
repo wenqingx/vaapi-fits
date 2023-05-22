@@ -26,6 +26,9 @@ class TranscoderTest(BaseTranscoderTest):
         sw = (dict(maxres = (16384, 16384)), have_gst_element("libde265dec"), "h265parse ! libde265dec ! videoconvert"),
         hw = (platform.get_caps("decode", "hevc_8"), have_gst_element("msdkh265dec"), "h265parse ! msdkh265dec"),
       ),
+      "av1-8" : dict(
+        hw = (platform.get_caps("decode", "av1_8"), have_gst_element("msdkav1dec"), "av1parse ! msdkav1dec"),
+      ),
       "mpeg2" : dict(
         sw = (dict(maxres = (2048, 2048)), have_gst_element("mpeg2dec"), "mpegvideoparse ! mpeg2dec ! videoconvert"),
         hw = (platform.get_caps("decode", "mpeg2"), have_gst_element("msdkmpeg2dec"), "mpegvideoparse ! msdkmpeg2dec"),
@@ -58,6 +61,9 @@ class TranscoderTest(BaseTranscoderTest):
         hw = (platform.get_caps("encode", "hevc_8"), have_gst_element("msdkh265enc"), "msdkh265enc ! video/x-h265,profile=main ! h265parse"),
         lp = (platform.get_caps("vdenc", "hevc_8"), have_gst_element("msdkh265enc"), "msdkh265enc tune=low-power ! video/x-h265,profile=main ! h265parse"),
       ),
+      "av1-8" : dict(
+        lp = (platform.get_caps("vdenc", "av1_8"), have_gst_element("msdkav1enc"), "msdkav1enc ! video/x-av1,profile=main ! av1parse"),
+      ),
       "mpeg2" : dict(
         sw = (dict(maxres = (2048, 2048)), have_gst_element("avenc_mpeg2video"), "avenc_mpeg2video ! mpegvideoparse"),
         hw = (platform.get_caps("encode", "mpeg2"), have_gst_element("msdkmpeg2enc"), "msdkmpeg2enc ! mpegvideoparse"),
@@ -79,6 +85,9 @@ class TranscoderTest(BaseTranscoderTest):
   # hevc implies hevc 8 bit
   requirements["encode"]["hevc"] = requirements["encode"]["hevc-8"]
   requirements["decode"]["hevc"] = requirements["decode"]["hevc-8"]
+  # av1 implies av1 8 bit
+  requirements["encode"]["av1"] = requirements["encode"]["av1-8"]
+  requirements["decode"]["av1"] = requirements["decode"]["av1-8"]
 
   def before(self):
     super().before()
@@ -95,6 +104,7 @@ class TranscoderTest(BaseTranscoderTest):
       "msdkh265dec:primary",
       "msdkmpeg2dec:primary",
       "msdkmjpegdec:primary",
+      "msdkav1dec:primary",
     ]
     os.environ["GST_PLUGIN_FEATURE_RANK"] = ','.join(ranks)
 
