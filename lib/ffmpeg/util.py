@@ -6,6 +6,7 @@
 
 import itertools
 import re
+import slash
 
 from ...lib.common import memoize, try_call, call, exe2os
 from ...lib.formats import FormatMapper
@@ -75,7 +76,7 @@ def have_ffmpeg_filter_options(name, *args):
   result = try_call(f"{exe2os('ffmpeg')} -hide_banner -filters | awk '{{print $2}}' | grep -w {name}")
   if result is True:
     for key in args:
-      result = try_call(f"{exe2os('ffmpeg')} -hide_banner -h filter={name} | grep -e '^   {key} '")
+      result = try_call(f"{exe2os('ffmpeg')} -hide_banner -h filter={name} | grep -e '^  {key} '")
       if result is False:
         break
   return result, failmsg
@@ -94,14 +95,14 @@ def ffmpeg_probe_resolution(filename):
   return call(
     f"{exe2os('ffprobe')} -v quiet -select_streams v:0"
     " -show_entries stream=width,height -of"
-    f" csv=s=x:p=0 {filename}"
+    f" csv=s=x:p=0 {filename} 2>/dev/null"
   ).strip().strip('x')
 
 def ffmpeg_probe_fps(filename):
   return call(
     f"{exe2os('ffprobe')} -v quiet -select_streams v:0"
     f" -show_entries stream=r_frame_rate"
-    f" -of csv=s=x:p=0 {filename}"
+    f" -of csv=s=x:p=0 {filename} 2>/dev/null"
   ).strip().strip('x')
 
 class BaseFormatMapper(FormatMapper):
