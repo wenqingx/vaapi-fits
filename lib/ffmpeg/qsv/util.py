@@ -7,6 +7,7 @@
 from ....lib.common import memoize, get_media
 from ....lib.ffmpeg.util import *
 from ....lib.codecs import Codec
+from ....lib.string_api import *
 
 def using_compatible_driver():
   return get_media()._get_driver_name() in ["iHD", "d3d11", "dxva2"]
@@ -75,6 +76,37 @@ def mapprofile(codec, profile):
       "simple"    : "simple",
       "main"      : "main",
       "high"      : "high",
+    },
+  }.get(codec, {}).get(profile, None)
+
+@memoize
+def mapprofile_stringapi(codec, profile):
+  return {
+    Codec.AVC     : {
+      "high"      : CodecProfile.MFX_PROFILE_AVC_HIGH.value,
+      "main"      : CodecProfile.MFX_PROFILE_AVC_MAIN.value,
+      "baseline"  : CodecProfile.MFX_PROFILE_AVC_BASELINE.value,
+      "unknown"   : CodecProfile.MFX_PROFILE_UNKNOWN.value
+    },
+    Codec.HEVC   : {
+      "main"      : CodecProfile.MFX_PROFILE_HEVC_MAIN.value,
+      "main444"   : CodecProfile.MFX_PROFILE_HEVC_REXT.value,
+      "scc"       : CodecProfile.MFX_PROFILE_HEVC_SCC.value,
+      "scc-444"   : CodecProfile.MFX_PROFILE_HEVC_SCC.value,
+      "mainsp"    : CodecProfile.MFX_PROFILE_HEVC_MAINSP.value,
+      "main10"     : CodecProfile.MFX_PROFILE_HEVC_MAIN10.value,
+      "main10sp"   : CodecProfile.MFX_PROFILE_HEVC_MAINSP.value,
+      "main444-10" : CodecProfile.MFX_PROFILE_HEVC_REXT.value,
+      "unknown"   : CodecProfile.MFX_PROFILE_UNKNOWN.value
+    },
+    Codec.AV1 : {
+      "main"  : CodecProfile.MFX_PROFILE_AV1_MAIN.value,
+    },
+    Codec.VP9 : {
+      "profile0"  : CodecProfile.MFX_PROFILE_VP9_0,
+      "profile1"  : CodecProfile.MFX_PROFILE_VP9_1,
+      "profile2"  : CodecProfile.MFX_PROFILE_VP9_2,
+      "profile3"  : CodecProfile.MFX_PROFILE_VP9_3
     },
   }.get(codec, {}).get(profile, None)
 
