@@ -6,6 +6,7 @@
 
 import re
 import slash
+import random
 
 from ....lib import platform
 from ....lib.ffmpeg.encoderbase import BaseEncoderTest, Encoder as FFEncoder
@@ -64,11 +65,40 @@ class Encoder(FFEncoder):
 
   @property
   def encparams(self):
-#    return (
-#      f"{super().encparams}{self.ldb}"
-#      f"{self.iqfactor}{self.bqfactor}"
-#      f"{self.iqoffset}{self.bqoffset}"
-#    )
+    _enc_params_stringapi = 0
+    _stringapi_param = 0
+    _cmdline_stringapi_param = vars(self).get("cmdline_stringapi_param", 0) #passed through from the test cases cmdline option
+    if _cmdline_stringapi_param == 1: #to call encparams_string_api
+      _stringapi_param = 1
+    elif _stringapi_param == 2: #the random is even, then to call encparams_string_api
+      _randint = random.randint(1,10)
+      if _randint%2==0: #even
+        _stringapi_param = 1
+      else:
+        _stringapi_param = 0
+    else:
+      _enc_params_stringapi = 0
+
+    #  check whether call encparams_string_api
+    _enc_params_stringapi = all([
+      vars(self).get("stringapi_platform_support", 0), #the platform whether support stringapi
+      _stringapi_param == 1,
+    ])
+
+    _enc_params_stringapi = 1
+    if _enc_params_stringapi:
+      vars(self).setdefault("is_enc_params_stringapi", 1)
+      return (f"{self.encparams_string_api}")
+    else:
+      vars(self).setdefault("is_enc_params_stringapi", 0)
+      return (
+        f"{super().encparams}{self.ldb}"
+        f"{self.iqfactor}{self.bqfactor}"
+        f"{self.iqoffset}{self.bqoffset}"
+      )
+
+  @property
+  def encparams_string_api(self):
     _encparams = ""
     if self.profile != None and len(self.profile.strip())>0:
         r,_,_profile=self.profile.partition('-profile:v')
@@ -170,15 +200,29 @@ class Encoder(FFEncoder):
     if vars(self).get("_encoded", None) is not None:
       get_media().artifacts.purge(self._encoded)
     self._encoded = get_media().artifacts.reserve(self.encoded_ext)
-
-    return call(
-      f"{exe2os('ffmpeg')} -v verbose {self.hwinit}"
-      f" -f rawvideo -pix_fmt {self.format} -s:v {self.width}x{self.height}"
-      f" {self.fps} -i {self.ossource}"
-      f" -vf 'format={self.hwformat}{self.hwupload}{self.roi}'"
-      f" -an -c:v {self.ffencoder} -qsv_params '{self.encparams}'"
-      f" -vframes {self.frames} -y {self.ffoutput}"
-    )
+    _is_enc_params_stringapi = vars(self).get("is_enc_params_stringapi", 0)
+    _is_enc_params_stringapi=1
+    if _is_enc_params_stringapi==1:
+      #if vars(self).get("_encoded", None) is not None:
+      #  get_media().artifacts.purge(self._encoded)
+      #self._encoded = get_media().artifacts.reserve(self.encoded_ext)
+      return call(
+        f"{exe2os('ffmpeg')} -v verbose {self.hwinit}"
+        f" -f rawvideo -pix_fmt {self.format} -s:v {self.width}x{self.height}"
+        f" {self.fps} -i {self.ossource}"
+        f" -vf 'format={self.hwformat}{self.hwupload}{self.roi}'"
+        f" -an -c:v {self.ffencoder} -qsv_params '{self.encparams}'"
+        f" -vframes {self.frames} -y {self.ffoutput}"
+      )
+    else:
+      return call(
+        f"{exe2os('ffmpeg')} -v verbose {self.hwinit}"
+        f" -f rawvideo -pix_fmt {self.format} -s:v {self.width}x{self.height}"
+        f" {self.fps} -i {self.ossource}"
+        f" -vf 'format={self.hwformat}{self.hwupload}{self.roi}'"
+        f" -an -c:v {self.ffencoder} {self.encparams}"
+        f" -vframes {self.frames} -y {self.ffoutput}"
+      )
 
 @slash.requires(*have_ffmpeg_hwaccel("qsv"))
 @slash.requires(using_compatible_driver)
