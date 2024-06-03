@@ -65,32 +65,10 @@ class Encoder(FFEncoder):
 
   @property
   def encparams(self):
-    _enc_params_stringapi = 0
-    _stringapi_param = 0
-    _cmdline_stringapi_param = vars(self).get("cmdline_stringapi_param", 0) #passed through from the test cases cmdline option
-    if _cmdline_stringapi_param == 1: #to call encparams_string_api
-      _stringapi_param = 1
-    elif _stringapi_param == 2: #the random is even, then to call encparams_string_api
-      _randint = random.randint(1,10)
-      if _randint%2==0: #even
-        _stringapi_param = 1
-      else:
-        _stringapi_param = 0
-    else:
-      _enc_params_stringapi = 0
-
-    #  check whether call encparams_string_api
-    _enc_params_stringapi = all([
-      vars(self).get("stringapi_platform_support", 0), #the platform whether support stringapi
-      _stringapi_param == 1,
-    ])
-
-    _enc_params_stringapi = 1
+    _enc_params_stringapi = vars(self).get("is_enc_params_stringapi", 0)
     if _enc_params_stringapi:
-      vars(self).setdefault("is_enc_params_stringapi", 1)
       return (f"{self.encparams_string_api}")
     else:
-      vars(self).setdefault("is_enc_params_stringapi", 0)
       return (
         f"{super().encparams}{self.ldb}"
         f"{self.iqfactor}{self.bqfactor}"
@@ -200,12 +178,29 @@ class Encoder(FFEncoder):
     if vars(self).get("_encoded", None) is not None:
       get_media().artifacts.purge(self._encoded)
     self._encoded = get_media().artifacts.reserve(self.encoded_ext)
-    _is_enc_params_stringapi = vars(self).get("is_enc_params_stringapi", 0)
-    _is_enc_params_stringapi=1
-    if _is_enc_params_stringapi==1:
-      #if vars(self).get("_encoded", None) is not None:
-      #  get_media().artifacts.purge(self._encoded)
-      #self._encoded = get_media().artifacts.reserve(self.encoded_ext)
+
+    _enc_params_stringapi = 0
+    _stringapi_param = 0
+    _cmdline_stringapi_param = get_media().stringapi #passed through from the test cases cmdline option
+    if _cmdline_stringapi_param == 1: #to call encparams_string_api
+      _stringapi_param = 1
+    elif _cmdline_stringapi_param == 2: #the random is even, then to call encparams_string_api
+      _randint = random.randint(1,10)
+      if _randint%2==0: #even
+        _stringapi_param = 1
+      else:
+        _stringapi_param = 0
+    else:
+      _enc_params_stringapi = 0
+
+    #  check whether call encparams_string_api
+    _enc_params_stringapi = all([
+      get_media()._get_platform_stringapi_enable(), #the platform whether support stringapi
+      _stringapi_param == 1
+    ])
+
+    if _enc_params_stringapi == True:
+      vars(self).update(is_enc_params_stringapi=1)
       return call(
         f"{exe2os('ffmpeg')} -v verbose {self.hwinit}"
         f" -f rawvideo -pix_fmt {self.format} -s:v {self.width}x{self.height}"
@@ -215,6 +210,7 @@ class Encoder(FFEncoder):
         f" -vframes {self.frames} -y {self.ffoutput}"
       )
     else:
+      vars(self).update(is_enc_params_stringapi=0)
       return call(
         f"{exe2os('ffmpeg')} -v verbose {self.hwinit}"
         f" -f rawvideo -pix_fmt {self.format} -s:v {self.width}x{self.height}"

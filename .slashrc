@@ -88,6 +88,12 @@ class MediaPlugin(slash.plugins.PluginInterface):
     parser.add_argument("--parallel-metrics", action = "store_true")
     parser.add_argument("--platform", default = None, type = str, required = True)
     parser.add_argument("--device", default = '/dev/dri/renderD128', type = str, help = 'vaapi-fits run with render device')
+    parser.add_argument("--stringapi", default = 0,
+      type = int, help = (
+        f"{int(0)}   = default, disabled string api; "
+        f"{int(1)}   = only enabled string api; "
+        f"{int(2)}   = random call parameters with enabling and disabling string api"
+        " (default: %(default)i)"))
 
   def configure_from_parsed_args(self, args):
     self.baseline = Baseline(args.baseline_file, args.rebase)
@@ -98,6 +104,7 @@ class MediaPlugin(slash.plugins.PluginInterface):
     self.ctapr = args.ctapr
     self.platform = args.platform
     self.render_device = args.device
+    self.stringapi = args.stringapi
 
     assert not (args.rebase and slash.config.root.parallel.num_workers > 0), "rebase in parallel mode is not supported"
     assert not (args.ctapt != -1 and slash.config.root.parallel.num_workers > 0), "ctapt in parallel mode is not supported"
@@ -208,6 +215,10 @@ class MediaPlugin(slash.plugins.PluginInterface):
   def _get_gpu_gen(self):
     from lib.platform import info
     return info()["gpu"]["gen"]
+
+  def _get_platform_stringapi_enable(self):
+    from lib.platform import info
+    return info()["stringapi"]["enable"]
 
   def _get_call_timeout(self):
     if self.test_call_timeout > 0:
